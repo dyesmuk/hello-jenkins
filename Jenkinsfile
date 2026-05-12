@@ -6,47 +6,41 @@ pipeline {
     }
 
     environment {
-        APP_NAME = 'hello-jenkins'
-        JEST_JUNIT_OUTPUT_DIR = 'test-results'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        IMAGE_NAME = "vamandeshmukh/hello-jenkins"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+        JEST_JUNIT_OUTPUT_DIR  = 'test-results'
         JEST_JUNIT_OUTPUT_NAME = 'junit.xml'
     }
 
     stages {
 
         stage('Checkout') {
-            steps {
-                checkout scm
-                echo "Branch: ${GIT_BRANCH} | Commit: ${GIT_COMMIT[0..7]}"
-            }
+            steps { checkout scm }
         }
 
-        stage('Install') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'npm test'
-            }
+        stage('Install & Test') {
+            steps { sh 'npm install && npm test' }
             post {
-                always {
-                    junit 'test-results/junit.xml'
-                }
+                always { junit 'test-results/junit.xml' }
             }
         }
 
-        stage('Archive Artifact') {
+        stage('Build & Push Docker Image') {
             steps {
-                archiveArtifacts artifacts: 'app.js,package.json', fingerprint: true
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh """
+                    echo ${DOCKERHUB_CREDENTIALS_PSW} | \
+                    docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                """
             }
         }
 
     }
 
     post {
-        success { echo "Build ${BUILD_NUMBER} succeeded." }
-        failure { echo "Build ${BUILD_NUMBER} failed."   }
+        success { echo "Build ${BUILD_NUMBER} pushed to Docker Hub." }
+        failure { echo "Build ${BUILD_NUMBER} failed." }
     }
 }
