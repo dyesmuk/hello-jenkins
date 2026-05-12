@@ -37,10 +37,17 @@ pipeline {
             }
         }
 
+        stage('Deploy') {
+            steps {
+                sh "docker rm -f hello-jenkins || true"
+                sh "docker run -d --name hello-jenkins -p 3000:3000 ${IMAGE_NAME}:${IMAGE_TAG}"
+            }
+        }
+
     }
 
     post {
-        success { echo "Build ${BUILD_NUMBER} pushed to Docker Hub." }
+        success { echo "Build ${BUILD_NUMBER} deployed. App running at http://localhost:3000" }
         failure { echo "Build ${BUILD_NUMBER} failed." }
     }
 }
