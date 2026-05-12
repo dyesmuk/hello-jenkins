@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 
 app.get('/', (req, res) => {
-    res.send('Hello from Jenkins CI/CD! 12345 9999999');
+    res.send('Hello from Jenkins CI/CD! 12345');
 });
 
 module.exports = app;
